@@ -16,8 +16,7 @@ return new class extends Migration
             $table->string('first_name');
             $table->string('last_name');
             $table->string('email')->unique();
-            $table->date('hire_date');
-            $table->integer('solde_de_conge')->default(20);
+            $table->integer('leave_balance')->default(20);
             $table->timestamps();
         });
     }
