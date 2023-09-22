@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasTimestamps;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class LeaveType extends Model
+class vacationType extends Model
 {
     use HasFactory;
     use HasTimestamps;
@@ -16,8 +16,8 @@ class LeaveType extends Model
         'label',
     ];
 
-    public function leaveRequests(): HasMany
+    public function vacationRequests(): HasMany
     {
-        return $this->hasMany(LeaveRequest::class);
+        return $this->hasMany(vacationRequest::class);
     }
 }

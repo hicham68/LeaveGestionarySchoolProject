@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('first_name');
             $table->string('last_name');
             $table->string('email')->unique();
-            $table->integer('leave_balance')->default(20);
+            $table->integer('vacation_balance')->default(20);
             $table->timestamps();
         });
     }

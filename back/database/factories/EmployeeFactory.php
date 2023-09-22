@@ -19,8 +19,10 @@ class EmployeeFactory extends Factory
         return [
             'first_name' => fake()->firstName(),
             'last_name' => fake()->lastName(),
-            'leave_balance' => fake()->numberBetween(0, 20),
+            'vacation_balance' => fake()->numberBetween(0, 20),
             'email' => fake()->unique()->safeEmail(),
+            // created at fake data between 2019-01-01 and now
+            'created_at' => fake()->dateTimeBetween('-3 years', 'now'),
 
         ];
     }

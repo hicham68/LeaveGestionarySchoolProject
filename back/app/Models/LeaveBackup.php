@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasTimestamps;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class LeaveBackup extends Model
+class vacationBackup extends Model
 {
     use HasFactory;
     use HasTimestamps;
@@ -15,7 +15,7 @@ class LeaveBackup extends Model
 
     protected $fillable = [
         'employee_id',
-        'leave_type_id',
+        'vacation_type_id',
         'reason_id',
         'start_date',
         'end_date',
@@ -27,9 +27,9 @@ class LeaveBackup extends Model
         return $this->belongsTo(Employee::class);
     }
 
-    public function leaveTypes(): BelongsTo
+    public function vacationTypes(): BelongsTo
     {
-        return $this->belongsTo(LeaveType::class);
+        return $this->belongsTo(vacationType::class);
     }
 
     public function reasons(): BelongsTo

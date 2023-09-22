@@ -13,19 +13,19 @@ class Employee extends Model
     protected $fillable = [
         'first_name',
         'last_name',
-        'leave_balance',
+        'vacation_balance',
         'email',
     ];
 
 
-    public function leaveRequests(): HasMany
+    public function vacationRequests(): HasMany
     {
-        return $this->hasMany(LeaveRequest::class);
+        return $this->hasMany(vacationRequest::class);
     }
 
-    public function leaveBackups(): HasMany
+    public function vacationBackups(): HasMany
     {
-        return $this->hasMany(LeaveBackup::class);
+        return $this->hasMany(vacationBackup::class);
     }
 
 }

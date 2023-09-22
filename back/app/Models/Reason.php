@@ -14,8 +14,8 @@ class Reason extends Model
         'label',
     ];
 
-    public function leaveRequests(): HasMany
+    public function vacationRequests(): HasMany
     {
-        return $this->hasMany(LeaveRequest::class);
+        return $this->hasMany(vacationRequest::class);
     }
 }
