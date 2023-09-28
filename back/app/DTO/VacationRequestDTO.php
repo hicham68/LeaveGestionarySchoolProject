@@ -2,18 +2,20 @@
 
 namespace App\DTO;
 
+use Illuminate\Support\Carbon as Date;
+
 class VacationRequestDTO
 {
     public int $employee_id;
-    public string $start_date;
-    public string $end_date;
+    public Date $start_date;
+    public Date $end_date;
     public string $vacation_type;
     public string $reason;
 
     public function __construct(
         int    $employee_id,
-        string $start_date,
-        string $end_date,
+        Date $start_date,
+        Date $end_date,
         string $vacation_type,
         string $reason
     ) {
