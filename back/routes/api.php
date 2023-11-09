@@ -1,19 +1,14 @@
 <?php
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\VacationController;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group. Make something great!
-|
-*/
+Route::post('/demande-conge', [VacationController::class, 'create']);
+Route::get('/demande-conge', [VacationController::class, 'getAll']);
+Route::get('/demande-conge/{id}', [VacationController::class, 'getVacationRequest']);
+Route::get('/demande-conge/employee/{id}', [VacationController::class, 'getVacationRequestByEmployeeId']);
+Route::patch('/demande-conge/{id}', [VacationController::class, 'update']);
+Route::delete('/demande-conge/{id}', [VacationController::class, 'deleteVacationRequest']);
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+Route::get('/solde-conge/employee/{id}', [EmployeeController::class, 'getVacationBalance']);

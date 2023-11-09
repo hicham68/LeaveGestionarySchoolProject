@@ -7,11 +7,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasTimestamps;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class vacationRequest extends Model
+class VacationRequest extends Model
 {
     use HasFactory;
     use HasTimestamps;
 
+    public mixed $employee_id;
+    public mixed $start_date;
+    public mixed $end_date;
+    public mixed $vacation_type;
+    public mixed $reason;
+
+    protected $table = 'vacation_requests';
 
     protected $fillable = [
         'employee_id',
@@ -35,5 +42,4 @@ class vacationRequest extends Model
     {
         return $this->belongsTo(Reason::class);
     }
-
 }

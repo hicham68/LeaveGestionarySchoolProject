@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasTimestamps;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class vacationType extends Model
+class VacationType extends Model
 {
     use HasFactory;
     use HasTimestamps;
