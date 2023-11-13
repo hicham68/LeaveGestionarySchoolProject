@@ -63,7 +63,7 @@ class VacationController extends Controller
 
     private function validateAndCreateVacationRequest(Request $request): \Illuminate\Http\JsonResponse
     {
-        // check f date is not invalid
+        // check if date is not invalid
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
@@ -77,23 +77,29 @@ class VacationController extends Controller
         }
 
         $id = $request->route('id');
-        $vacationRequest = VacationRequest::select('*')->where('id', $id)->first()->getOriginal();
+        $vacationRequest = VacationRequest::select('*')->where('id', $id)->first();
 
-        if (!$vacationRequest) {
+        $employeeId = $vacationRequest ? $vacationRequest['employee_id'] : $request->input('employee_id');
+
+        $employee = Employee::select('vacation_balance', 'created_at')->where('id', $employeeId)->first();
+
+        if (!$employee) {
             return response()->json([
-                'message' => "La demande de congé n'existe pas."
+                'message' => "La demande congé là n'existe pas."
             ], 404);
         }
 
-        $employeeId = $vacationRequest['employee_id'];
-
-        $employee = Employee::select('vacation_balance', 'created_at')->where('id', $employeeId)->first()->getOriginal();
+        $employee = $employee->getOriginal();
         $validateVacationService = new ValidateVacationService();
+
+        $vacationTypeLabel = $this->getVacationTypeLabel($vacationRequest ? $vacationRequest['vacation_type_id'] : $request->input('vacation_type_id'));
+        $vacationReasonLabel = $this->getVacationReasonLabel($vacationRequest ? $vacationRequest['reason_id'] : $request->input('reason_id'));
 
         $vacationBalance = $validateVacationService->vacationBalanceCalcul(
             $startDate,
             $endDate,
-            $employee['vacation_balance']
+            $employee['vacation_balance'],
+            $vacationTypeLabel
         );
 
         $teamAvailability = $validateVacationService->teamAvailabilityCalcul($startDate, $endDate);
@@ -114,8 +120,7 @@ class VacationController extends Controller
             ], 400);
         }
 
-        $vacationTypeLabel = $this->getVacationTypeLabel($vacationRequest['vacation_type_id']);
-        $vacationReasonLabel = $this->getVacationReasonLabel($vacationRequest['reason_id']);
+
 
         $vacationRequestDto = new VacationRequestDTO(
             $employeeId,
@@ -132,23 +137,17 @@ class VacationController extends Controller
             $seniority,
             $vacationUnpaidRequestedThisYear
         )) {
+            $data = [
+                'employee_id' => $employeeId,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'vacation_type_id' => $vacationRequest ? $vacationRequest['vacation_type_id'] : $request->input('vacation_type_id'),
+                'reason_id' => $vacationRequest ? $vacationRequest['reason_id'] : $request->input('reason_id'),
+            ];
+
             if ($id) {
-                $data = [
-                    'employee_id' => $employeeId,
-                    'start_date' => $startDate,
-                    'end_date' => $endDate,
-                    'vacation_type_id' => $vacationRequest['vacation_type_id'],
-                    'reason_id' => $vacationRequest['reason_id']
-                ];
                 VacationRequest::where('id', $id)->update($data);
             } else {
-                $data = [
-                    'employee_id' => $employeeId,
-                    'start_date' => $startDate,
-                    'end_date' => $endDate,
-                    'vacation_type_id' => $request->input('vacation_type_id'),
-                    'reason_id' => $request->input('reason_id'),
-                ];
                 VacationRequest::create($data);
             }
 
@@ -157,7 +156,7 @@ class VacationController extends Controller
             ], 201);
         } else {
             return response()->json([
-                'message' => "Désolé, notre système de priorités n'a pas pu accorder votre demande. Si vous avez des préoccupations ou des questions, n'hésitez pas à en discuter avec votre supérieur."
+                'message' => "Votre demande a été refusée. Veuillez vérifier vos données et réessayer."
             ], 400);
         }
     }

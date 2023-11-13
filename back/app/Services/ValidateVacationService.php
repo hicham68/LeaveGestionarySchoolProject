@@ -16,8 +16,7 @@ class ValidateVacationService
         int                $teamAvailability,
         int                $seniority,
         int                $vacationUnpaidRequestedThisYear
-    ): bool
-    {
+    ): bool {
         // Vérification du solde de congés suffisant
         $hasSufficientBalance = $this->hasSufficientBalance($vacationRequest, $vacationBalance);
 
@@ -40,34 +39,29 @@ class ValidateVacationService
 
         // Vérification du nombre de jours demandés cette année
         $isTooManyDaysRequested = $vacationUnpaidRequestedThisYear >= 5;
-
+        if (!$isUnpaidLeave && $vacationBalance <= 0) {
+            return false;
+        }
         if ($isTooFarInFuture) {
             return false;
-
         }
         if ($isImportantReason) {
-
             return true;
         }
         if ($isTooManyDaysRequested && $isUnpaidLeave) {
-
             return false;
         }
 
         if ($hasSufficientBalance && $isTeamPresent && $isSenior) {
-
             return true;
         }
         if ($isUnpaidLeave && $isTeamAvailable) {
-
             return true;
         }
         if ($isUnpaidLeave && !$isTeamAvailable) {
-
             return false;
         }
         if ($hasSufficientBalance && $isTeamAvailable) {
-
             return true;
         }
 
@@ -78,10 +72,10 @@ class ValidateVacationService
     private function hasSufficientBalance(VacationRequestDTO $vacationRequest, int $vacationBalance): bool
     {
         return $this->vacationBalanceCalcul(
-                $vacationRequest->start_date,
-                $vacationRequest->end_date,
-                $vacationBalance
-            ) >= 0;
+            $vacationRequest->start_date,
+            $vacationRequest->end_date,
+            $vacationBalance
+        ) >= 0;
     }
 
     private function isTooFarInFuture(VacationRequestDTO $vacationRequest): bool
@@ -128,8 +122,7 @@ class ValidateVacationService
         Date $startDate,
         Date $endDate,
         int  $vacationBalance
-    ): int
-    {
+    ): int {
         // Liste des jours fériés à personnaliser
         $holidays = [
             '2023-01-01', // Jour de l'An
@@ -165,6 +158,7 @@ class ValidateVacationService
         }
 
         // Calculez le nouveau solde de congé après déduction des jours de congé
+
         $newVacationBalance = $vacationBalance - $vacationDays;
 
         return $newVacationBalance;
