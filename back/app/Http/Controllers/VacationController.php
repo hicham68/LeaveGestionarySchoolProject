@@ -63,7 +63,7 @@ class VacationController extends Controller
 
     private function validateAndCreateVacationRequest(Request $request): \Illuminate\Http\JsonResponse
     {
-        // check f date is not invalid
+        // check if date is not invalid
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
@@ -76,24 +76,45 @@ class VacationController extends Controller
             ], 400);
         }
 
-        $id = $request->route('id');
-        $vacationRequest = VacationRequest::select('*')->where('id', $id)->first()->getOriginal();
-
-        if (!$vacationRequest) {
+        if ($startDate->lessThan(Carbon::now())) {
             return response()->json([
-                'message' => "La demande de congé n'existe pas."
+                'message' => "La date de début ne peut pas être dans le passé."
+            ], 400);
+        }
+
+        // can't create vacation request in the holidays and weekends
+        if (($startDate->isWeekend() && $endDate->isWeekend()) || in_array(
+            $startDate->format("Y-m-d"),
+            ValidateVacationService::HOLIDAYS
+        ) || in_array($endDate->format("Y-m-d"), ValidateVacationService::HOLIDAYS)) {
+             return response()->json([
+                 'message' => "Vous ne pouvez pas demander de congé le week-end ou les jours fériés."
+             ], 400);
+        }
+
+        $id = $request->route('id');
+        $vacationRequest = VacationRequest::select('*')->where('id', $id)->first();
+
+        $employeeId = $vacationRequest ? $vacationRequest['employee_id'] : $request->input('employee_id');
+
+        $employee = Employee::select('vacation_balance', 'created_at')->where('id', $employeeId)->first();
+
+        if (!$employee) {
+            return response()->json([
+                'message' => "La demande congé là n'existe pas."
             ], 404);
         }
 
-        $employeeId = $vacationRequest['employee_id'];
-
-        $employee = Employee::select('vacation_balance', 'created_at')->where('id', $employeeId)->first()->getOriginal();
+        $employee = $employee->getOriginal();
         $validateVacationService = new ValidateVacationService();
+
+        $vacationTypeLabel = $this->getVacationTypeLabel($vacationRequest ? $vacationRequest['vacation_type_id'] : $request->input('vacation_type_id'));
+        $vacationReasonLabel = $this->getVacationReasonLabel($vacationRequest ? $vacationRequest['reason_id'] : $request->input('reason_id'));
 
         $vacationBalance = $validateVacationService->vacationBalanceCalcul(
             $startDate,
             $endDate,
-            $employee['vacation_balance']
+            $employee['vacation_balance'],
         );
 
         $teamAvailability = $validateVacationService->teamAvailabilityCalcul($startDate, $endDate);
@@ -114,8 +135,7 @@ class VacationController extends Controller
             ], 400);
         }
 
-        $vacationTypeLabel = $this->getVacationTypeLabel($vacationRequest['vacation_type_id']);
-        $vacationReasonLabel = $this->getVacationReasonLabel($vacationRequest['reason_id']);
+
 
         $vacationRequestDto = new VacationRequestDTO(
             $employeeId,
@@ -132,34 +152,43 @@ class VacationController extends Controller
             $seniority,
             $vacationUnpaidRequestedThisYear
         )) {
+            $data = [
+                'employee_id' => $employeeId,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'vacation_type_id' => $vacationRequest ? $vacationRequest['vacation_type_id'] : $request->input('vacation_type_id'),
+                'reason_id' => $vacationRequest ? $vacationRequest['reason_id'] : $request->input('reason_id'),
+            ];
+
             if ($id) {
-                $data = [
-                    'employee_id' => $employeeId,
-                    'start_date' => $startDate,
-                    'end_date' => $endDate,
-                    'vacation_type_id' => $vacationRequest['vacation_type_id'],
-                    'reason_id' => $vacationRequest['reason_id']
-                ];
+                $vacationBalance = $validateVacationService->vacationBalanceCalcul(
+                    $startDate,
+                    $endDate,
+                    $employee['vacation_balance'],
+                    "update",
+                    $vacationRequest['start_date'],
+                    $vacationRequest['end_date']
+                );
+
                 VacationRequest::where('id', $id)->update($data);
+                Employee::where('id', $employeeId)->update([
+                    'vacation_balance' => $vacationBalance
+                ]);
             } else {
-                $data = [
-                    'employee_id' => $employeeId,
-                    'start_date' => $startDate,
-                    'end_date' => $endDate,
-                    'vacation_type_id' => $request->input('vacation_type_id'),
-                    'reason_id' => $request->input('reason_id'),
-                ];
+                Employee::where('id', $employeeId)->update([
+                    'vacation_balance' => $vacationBalance
+                ]);
                 VacationRequest::create($data);
             }
 
             return response()->json([
                 'message' => "Votre demande a été acceptée avec succès. Merci !"
             ], 201);
-        } else {
-            return response()->json([
-                'message' => "Désolé, notre système de priorités n'a pas pu accorder votre demande. Si vous avez des préoccupations ou des questions, n'hésitez pas à en discuter avec votre supérieur."
-            ], 400);
         }
+
+        return response()->json([
+            'message' => "Votre demande a été refusée. Veuillez vérifier vos données et réessayer."
+        ], 400);
     }
 
     public function getVacationRequestByEmployeeId(Request $request): \Illuminate\Http\JsonResponse
@@ -194,6 +223,7 @@ class VacationController extends Controller
 
     public function deleteVacationRequest(Request $request): \Illuminate\Http\JsonResponse
     {
+        $validateVacationService = new ValidateVacationService();
         $id = $request->route('id');
         $vacation = VacationRequest::select(
             'id',
@@ -207,6 +237,15 @@ class VacationController extends Controller
             ->first();
 
         if ($vacation) {
+            $employee = Employee::find($vacation['employee_id']);
+            $newbalance = $validateVacationService->vacationBalanceCalcul(
+               Carbon::parse($vacation['start_date']),
+                Carbon::parse($vacation['end_date']),
+                $employee->vacation_balance,
+                "delete"
+            );
+            $employee->vacation_balance = $newbalance;
+            $employee->save();
             VacationRequest::where('id', $id)->delete();
             return response()->json([
                 'message' => "La demande de congé a été supprimée avec succès."
