@@ -10,13 +10,23 @@ use App\Models\Employee;
 
 class ValidateVacationService
 {
+    // Liste des jours fériés à personnaliser
+    const HOLIDAYS = [
+        '2023-01-01', // Jour de l'An
+        '2023-05-01', // Fête du Travail
+        '2023-07-14', // Fête Nationale
+        '2023-12-25', // Noël
+        // Ajoutez d'autres jours fériés au besoin
+    ];
+
     public function validateVacation(
         VacationRequestDTO $vacationRequest,
         int                $vacationBalance,
         int                $teamAvailability,
         int                $seniority,
         int                $vacationUnpaidRequestedThisYear
-    ): bool {
+    ): bool
+    {
         // Vérification du solde de congés suffisant
         $hasSufficientBalance = $this->hasSufficientBalance($vacationRequest, $vacationBalance);
 
@@ -72,10 +82,10 @@ class ValidateVacationService
     private function hasSufficientBalance(VacationRequestDTO $vacationRequest, int $vacationBalance): bool
     {
         return $this->vacationBalanceCalcul(
-            $vacationRequest->start_date,
-            $vacationRequest->end_date,
-            $vacationBalance
-        ) >= 0;
+                $vacationRequest->start_date,
+                $vacationRequest->end_date,
+                $vacationBalance
+            ) >= 0;
     }
 
     private function isTooFarInFuture(VacationRequestDTO $vacationRequest): bool
@@ -119,25 +129,20 @@ class ValidateVacationService
     }
 
     public function vacationBalanceCalcul(
-        Date $startDate,
-        Date $endDate,
-        int  $vacationBalance
-    ): int {
-        // Liste des jours fériés à personnaliser
-        $holidays = [
-            '2023-01-01', // Jour de l'An
-            '2023-05-01', // Fête du Travail
-            '2023-07-14', // Fête Nationale
-            '2023-12-25', // Noël
-            // Ajoutez d'autres jours fériés au besoin
-        ];
+        Date   $startDate,
+        Date   $endDate,
+        int    $vacationBalance,
+        string $requestType = "create",
+        string $oldStartDate = null,
+        string $oldEndDate = null
+    ): int
+    {
 
         // Créez une période de dates entre la date de début et la date de fin
         $period = CarbonPeriod::create($startDate, $endDate);
 
         // compteur pour le nombre de jours de congé
         $vacationDays = 0;
-
 
         foreach ($period as $day) {
             // Vérification si le jour est un week-end
@@ -149,7 +154,7 @@ class ValidateVacationService
             $formattedDay = $day->format('Y-m-d');
 
             // Vérification si le jour est un jour férié
-            if (in_array($formattedDay, $holidays)) {
+            if (in_array($formattedDay, self::HOLIDAYS)) {
                 continue; // Ignore les jours fériés français
             }
 
@@ -157,12 +162,50 @@ class ValidateVacationService
             $vacationDays++;
         }
 
-        // Calculez le nouveau solde de congé après déduction des jours de congé
+        if ($requestType === "update" && $oldStartDate !== null && $oldEndDate !== null) {
+            // convertir les anciennes dates de début et de fin en objets de date
+            $oldStartDate = Date::parse($oldStartDate);
+            $oldEndDate = Date::parse($oldEndDate);
+            // Créez une période de dates entre l'ancienne date de début et l'ancienne date de fin
+            $oldPeriod = CarbonPeriod::create($oldStartDate, $oldEndDate);
 
+            // compteur pour le nombre de jours de congé de l'ancienne période
+            $oldVacationDays = 0;
+
+            foreach ($oldPeriod as $day) {
+                // Vérification si le jour est un week-end
+                if ($day->isWeekend()) {
+                    continue; // Ignorez les week-ends
+                }
+
+                // formatez le jour pour correspondre au format de la liste des jours fériés
+                $formattedDay = $day->format('Y-m-d');
+
+                // Vérification si le jour est un jour férié
+                if (in_array($formattedDay, self::HOLIDAYS)) {
+                    continue; // Ignore les jours fériés français
+                }
+
+                // Si ce n'est ni un week-end ni un jour férié, ajoutez-le aux jours de congé de l'ancienne période
+                $oldVacationDays++;
+            }
+
+            // Ajoutez les jours de congé de l'ancienne période au solde de congé avant de soustraire les nouveaux jours de congé
+            $vacationBalance += $oldVacationDays;
+        }
+
+        if ($requestType === "delete") {
+            // Ajoutez les jours de congé au solde de congé pour restaurer le solde de l'employé
+            $vacationBalance += $vacationDays;
+            $vacationDays = 0;
+        }
+
+        // Calculez le nouveau solde de congé après déduction des jours de congé
         $newVacationBalance = $vacationBalance - $vacationDays;
 
         return $newVacationBalance;
     }
+
 
     public function teamAvailabilityCalcul(Date $startDate, Date $endDate): int
     {
