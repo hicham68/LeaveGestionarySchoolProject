@@ -51,7 +51,7 @@ class VacationRequestTest extends TestCase
     {
         $response = $this->patchJson('/api/demande-conge/7', [
             'start_date' => Carbon::now()->addWeek()->startOfWeek()->addDay(),
-            'end_date' => Carbon::now()->addWeek()->startOfWeek()->addDay(2),
+            'end_date' => Carbon::now()->addWeek()->startOfWeek()->addDays(2),
         ]);
         $response->assertStatus(201);
     }
