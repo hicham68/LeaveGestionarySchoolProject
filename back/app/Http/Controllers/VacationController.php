@@ -101,7 +101,7 @@ class VacationController extends Controller
 
         if (!$employee) {
             return response()->json([
-                'message' => "La demande congé là n'existe pas."
+                'message' => "L'employé ou la demande là n'existe pas."
             ], 404);
         }
 
@@ -205,7 +205,7 @@ class VacationController extends Controller
             ->where('employee_id', $id)
             ->get();
 
-        if ($vacations) {
+        if (!$vacations->isEmpty()) {
             return response()->json([
                 'vacations' => $vacations
             ], 200);
