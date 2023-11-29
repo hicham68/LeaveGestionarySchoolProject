@@ -1,3 +1,4 @@
+# Variables d'environnement pour la base de données MySQL
 variables:
   MYSQL_ROOT_PASSWORD: root
   MYSQL_ALLOW_EMPTY_PASSWORD: "true"
@@ -10,21 +11,27 @@ variables:
   DOCKER_TLS_CERTDIR: ""
   DB_PORT: 3306
 
+# Image Docker utilisée pour l'exécution des jobs
 image: php:8.1
 
+# Services Docker disponibles pendant l'exécution du pipeline
 services:
   - mysql:8.0.29
 
+# Stages du pipeline
 stages:
   - test
 
+# Cache pour stocker les dépendances entre les exécutions des jobs
 cache:
   paths:
     - vendor/
 
+# Job de test
 test_job:
   stage: test
   before_script:
+    # Installation des dépendances
     - apt-get update && apt-get install -y default-mysql-client zip unzip git
     - docker-php-ext-install pdo pdo_mysql
     - php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
@@ -32,8 +39,11 @@ test_job:
     - php -r "unlink('composer-setup.php');"
     - cd back/
     - php ../composer.phar install
+
   script:
+    # Création de la base de données et chargement des données de test
     - echo "CREATE DATABASE IF NOT EXISTS \`$DB_DATABASE\` ;" | mysql -h"$DB_HOST" -u"$DB_USERNAME" -p"$DB_PASSWORD"
     - mysql -h"$DB_HOST" -u"$DB_USERNAME" -p"$DB_PASSWORD" $DB_DATABASE < database/gestioncongesdump.sql
+    # Exécution des tests
     - ./vendor/bin/phpunit tests/Unit/ValidateVacationTest.php
     - ./vendor/bin/phpunit tests/Feature/VacationRequestTest.php
