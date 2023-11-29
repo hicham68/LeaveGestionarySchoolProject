@@ -16,30 +16,11 @@ services:
   - mysql:8.0.29
 
 stages:
-  - build
   - test
-  - package
-  - publish
-  - deploy
 
 cache:
   paths:
     - vendor/
-
-build_job:
-  stage: build
-  only:
-    - develop
-  before_script:
-    - apt-get update && apt-get install -y default-mysql-client zip unzip git apt-get update && apt-get install -y default-mysql-client
-    - docker-php-ext-install pdo pdo_mysql
-    - php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-    - php composer-setup.php
-    - php -r "unlink('composer-setup.php');"
-    - cd back/
-    - php ../composer.phar install
-  script:
-    - ./bin/console cache:clear
 
 test_job:
   stage: test
