@@ -31,10 +31,8 @@ test_job:
     - php composer-setup.php
     - php -r "unlink('composer-setup.php');"
     - cd back/
-    - cp .env.example .env
     - php ../composer.phar install
   script:
-    - ls
     - echo "CREATE DATABASE IF NOT EXISTS \`$DB_DATABASE\` ;" | mysql -h"$DB_HOST" -u"$DB_USERNAME" -p"$DB_PASSWORD"
     - mysql -h"$DB_HOST" -u"$DB_USERNAME" -p"$DB_PASSWORD" $DB_DATABASE < database/gestioncongesdump.sql
     - ./vendor/bin/phpunit tests/Unit/ValidateVacationTest.php
