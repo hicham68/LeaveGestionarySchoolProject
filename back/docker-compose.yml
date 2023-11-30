@@ -1,19 +1,19 @@
-version: '3'
+version: '3'  # Utilise la syntaxe Docker Compose version 3
 
 services:
-  app:
+  app:  # Configuration du service pour l'application
     build:
-      context: .
+      context: .  # Utilise le Dockerfile dans le répertoire courant
     ports:
-      - "8000:8000"
+      - "8000:8000"  # Mappe le port 8000 de l'hôte vers le port 8000 du conteneur
     depends_on:
-      - mysql
+      - mysql  # Indique que ce service dépend du service MySQL
 
-  mysql:
-    image: mysql:8.0.29
+  mysql:  # Configuration du service pour la base de données MySQL
+    image: mysql:8.0.29  # Utilise l'image MySQL version 8.0.29
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_ALLOW_EMPTY_PASSWORD: "true"
-      MYSQL_DATABASE: gestionconges
+      MYSQL_DATABASE: gestionconges  # Crée une base de données appelée "gestionconges"
     ports:
-      - "3306:3306"
+      - "3306:3306"  # Mappe le port 3306 de l'hôte vers le port 3306 du conteneur
