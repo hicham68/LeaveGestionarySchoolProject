@@ -1,0 +1,35 @@
+# Utilisez l'image PHP 8.1
+FROM php:8.1
+
+# Installez les dépendances nécessaires
+RUN apt-get update && apt-get install -y default-mysql-client zip unzip git
+
+# Activez les extensions PHP nécessaires
+RUN docker-php-ext-install pdo pdo_mysql
+
+# Définissez le répertoire de travail
+WORKDIR /app
+
+# Copiez les fichiers nécessaires dans le conteneur
+COPY . /app
+
+# Téléchargez Composer
+RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+
+# Vérifiez l'intégrité de l'installateur
+RUN php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+
+# Supprimez l'installateur
+RUN php -r "unlink('composer-setup.php');"
+
+# Exécutez Composer pour installer les dépendances
+RUN composer install
+
+# Créez la base de données et chargez les données de test
+CMD ["sh", "-c", "until mysqladmin ping -hmysql -uroot -proot; do echo 'Waiting for MySQL to start...'; sleep 1; done && \
+    echo 'CREATE DATABASE IF NOT EXISTS `gestionconges` ;' | mysql -hmysql -uroot -proot && \
+    echo 'CREATE DATABASE IF NOT EXISTS `gestioncongestest` ;' | mysql -hmysql -uroot -proot && \
+    mysql -hmysql -uroot -proot gestionconges < database/gestioncongesdump.sql && \
+    mysql -hmysql -uroot -proot gestioncongestest < database/gestioncongesdump.sql && \
+    composer install && \
+    php artisan serve --host=0.0.0.0"]

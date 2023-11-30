@@ -1,62 +1,19 @@
-services: # Les services Docker à lancer
-  laravel.test: # Le service pour l'application Laravel
-    build: # Options de construction
-      context: ./vendor/laravel/sail/runtimes/8.2 # Chemin vers le Dockerfile
-      dockerfile: Dockerfile # Nom du Dockerfile
-      args: # Arguments pour le Dockerfile
-        WWWGROUP: '${WWWGROUP}' # Argument WWWGROUP
-    image: sail-8.2/app # Nom de l'image Docker
-    extra_hosts: # Entrées supplémentaires pour /etc/hosts
-      - 'host.docker.internal:host-gateway'
-    ports: # Ports à exposer
-      - '${APP_PORT:-80}:80'
-    environment: # Variables d'environnement
-      WWWUSER: '${WWWUSER}'
-      LARAVEL_SAIL: 1
-      XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
-      XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
-      IGNITION_LOCAL_SITES_PATH: '${PWD}'
-    volumes: # Volumes à monter
-      - '.:/var/www/html'
-    networks: # Réseaux à connecter
-      - sail
-    depends_on: # Dépendances du service
+version: '3'
+
+services:
+  app:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    depends_on:
       - mysql
 
-  mysql: # Le service pour le serveur MySQL
-    image: 'mysql/mysql-server:8.0' # Image Docker
-    ports: # Ports à exposer
-      - '${FORWARD_DB_PORT:-3306}:3306'
-    environment: # Variables d'environnement
-      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
-      MYSQL_ROOT_HOST: '%'
-      MYSQL_DATABASE: '${DB_DATABASE}'
-      MYSQL_USER: '${DB_USERNAME}'
-      MYSQL_PASSWORD: '${DB_PASSWORD}'
-      MYSQL_ALLOW_EMPTY_PASSWORD: 1
-    volumes: # Volumes à monter
-      - 'sail-mysql:/var/lib/mysql'
-      - './vendor/laravel/sail/database/mysql/create-testing-database.sh:/docker-entrypoint-initdb.d/10-create-testing-database.sh'
-    networks: # Réseaux à connecter
-      - sail
-
-  phpmyadmin: # Le service pour phpMyAdmin
-    image: 'phpmyadmin:latest' # Image Docker
-    ports: # Ports à exposer
-      - 8081:80
-    environment: # Variables d'environnement
-      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
-    links: # Liens vers d'autres services
-      - "mysql:db"
-    depends_on: # Dépendances du service
-      - mysql
-    networks: # Réseaux à connecter
-      - sail
-
-networks: # Les réseaux à utiliser
-  sail: # Le réseau 'sail'
-    driver: bridge # Pilote du réseau
-
-volumes: # Les volumes à utiliser
-  sail-mysql: # Le volume pour MySQL
-    driver: local # Pilote du volume
+  mysql:
+    image: mysql:8.0.29
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+      MYSQL_DATABASE: gestionconges
+    ports:
+      - "3306:3306"
