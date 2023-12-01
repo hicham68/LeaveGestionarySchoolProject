@@ -30,4 +30,15 @@ class EmployeeController extends Controller
             ], 404);
         }
     }
+    public function getEmployees(): \Illuminate\Http\JsonResponse
+    {
+      $employees = Employee::select(
+            'id',
+            'first_name',
+            'last_name'
+        )->get();
+      return response()->json([
+         $employees
+      ]);
+    }
 }

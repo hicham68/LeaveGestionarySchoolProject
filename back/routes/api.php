@@ -10,5 +10,5 @@ Route::get('/demande-conge/{id}', [VacationController::class, 'getVacationReques
 Route::get('/demande-conge/employee/{id}', [VacationController::class, 'getVacationRequestByEmployeeId']);
 Route::patch('/demande-conge/{id}', [VacationController::class, 'update']);
 Route::delete('/demande-conge/{id}', [VacationController::class, 'deleteVacationRequest']);
-
+Route::get('/employee', [EmployeeController::class, 'getEmployees']);
 Route::get('/solde-conge/employee/{id}', [EmployeeController::class, 'getVacationBalance']);
