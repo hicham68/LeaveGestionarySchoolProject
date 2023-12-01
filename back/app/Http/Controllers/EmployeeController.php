@@ -37,8 +37,8 @@ class EmployeeController extends Controller
             'first_name',
             'last_name'
         )->get();
-      return response()->json([
+      return response()->json(
          $employees
-      ]);
+      );
     }
 }
