@@ -11,7 +11,7 @@ class VacationType extends Model
 {
     use HasFactory;
     use HasTimestamps;
-
+    protected $table = 'vacation_types';
     protected $fillable = [
         'label',
     ];
