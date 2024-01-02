@@ -26,10 +26,15 @@ RUN php -r "unlink('composer-setup.php');"
 RUN composer install
 
 # Créez la base de données et chargez les données de test
-CMD ["sh", "-c", "until mysqladmin ping -hmysql -uroot -proot; do echo 'Waiting for MySQL to start...'; sleep 1; done && \
-    echo 'CREATE DATABASE IF NOT EXISTS `gestionconges` ;' | mysql -hmysql -uroot -proot && \
-    echo 'CREATE DATABASE IF NOT EXISTS `gestioncongestest` ;' | mysql -hmysql -uroot -proot && \
-    mysql -hmysql -uroot -proot gestionconges < database/gestioncongesdump.sql && \
-    mysql -hmysql -uroot -proot gestioncongestest < database/gestioncongesdump.sql && \
+CMD ["sh", "-c", "\
+    until mysqladmin ping -hmysql -uroot -proot; do echo 'Waiting for MySQL to start...'; sleep 1; done && \
+    if ! mysql -hmysql -uroot -proot -e 'use gestionconges'; then \
+        echo 'CREATE DATABASE IF NOT EXISTS `gestionconges` ;' | mysql -hmysql -uroot -proot && \
+        mysql -hmysql -uroot -proot gestionconges < database/gestioncongesdump.sql; \
+    fi && \
+    if ! mysql -hmysql -uroot -proot -e 'use gestioncongestest'; then \
+        echo 'CREATE DATABASE IF NOT EXISTS `gestioncongestest` ;' | mysql -hmysql -uroot -proot && \
+        mysql -hmysql -uroot -proot gestioncongestest < database/gestioncongesdump.sql; \
+    fi && \
     composer install && \
     php artisan serve --host=0.0.0.0"]

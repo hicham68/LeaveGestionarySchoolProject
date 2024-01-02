@@ -1,41 +1,81 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Button, TextInput } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import AsyncStorageFunctions from '../services/AsyncStorageFunctions.tsx'; // Assurez-vous d'importer correctement votre service AsyncStorageFunctions
+import AsyncStorageFunctions from '../services/AsyncStorageFunctions.tsx';
 
 const EmployeeScreen = () => {
   const [employeeData, setEmployeeData] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [vacationData, setVacationData] = useState(null);
+  const [vacationData, setVacationData] = useState([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedVacationId, setSelectedVacationId] = useState(null);
 
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
+  const fetchEmployees = async () => {
+    try {
+      const localEmployeeData = await AsyncStorageFunctions.getData('employees');
+      if (localEmployeeData) {
+        setEmployeeData(localEmployeeData);
+      } else {
         const apiUrl = `http://172.21.64.1:8000/api/employee`;
         const response = await fetch(apiUrl);
         const data = await response.json();
         setEmployeeData(data);
-      } catch (error) {
-        console.error('Erreur lors de la récupération des employés :', error);
+        await AsyncStorageFunctions.storeData('employees', JSON.stringify(data));
       }
-    };
-
-    fetchEmployees();
-  }, []);
-
-  const fetchVacations = async (employeeId) => {
-    try {
-      const apiUrl = `http://172.21.64.1:8000/api/demande-conge/employee/${employeeId}`;
-      const response = await fetch(apiUrl);
-      const data = await response.json();
-      setVacationData(data.vacations);
     } catch (error) {
-      console.error('Erreur lors de la récupération des congés :', error);
+      console.error('Erreur lors de la récupération des employés :', error);
     }
   };
+
+ const fetchVacations = async (employeeId) => {
+   try {
+   console.log(employeeId);
+     const isConnected = await AsyncStorageFunctions.checkInternetConnectivity();
+
+     if (isConnected) {
+       console.log('connected');
+       const apiUrl = `http://172.21.64.1:8000/api/demande-conge/employee/${employeeId}`;
+       const response = await fetch(apiUrl);
+       const data = await response.json();
+
+       // Mettre à jour les données locales uniquement si la connexion à l'API est disponible
+       await AsyncStorageFunctions.storeData(`vacations_${employeeId}`, JSON.stringify(data.vacations));
+       setVacationData(data.vacations);
+
+       console.log('Updating vacation data with API response:', JSON.stringify(data.vacations));
+     } else {
+       console.log('local mode');
+       const localVacationData = await AsyncStorageFunctions.getData(`vacations_${employeeId}`);
+       console.log('localdata', localVacationData);
+
+
+         console.log('Local Vacation Data Found:', localVacationData);
+         setVacationData(localVacationData);
+
+
+     }
+   } catch (error) {
+     console.error('Erreur lors de la récupération des congés :', error);
+   }
+ };
+
+
+
+
+
+
+  useEffect(() => {
+    const syncUpdates = async () => {
+        const isConnected = await AsyncStorageFunctions.checkInternetConnectivity();
+        if (isConnected) {
+          await AsyncStorageFunctions.syncPendingVacationUpdates();
+        }
+      };
+
+      syncUpdates();
+    fetchEmployees();
+  }, []);
 
   const fetchVacationDetails = async (vacationId) => {
     setSelectedVacationId(vacationId);
@@ -51,10 +91,11 @@ const EmployeeScreen = () => {
     }
   };
 
-  const handleEmployeeChange = (employeeId) => {
+  const handleEmployeeChange = async (employeeId) => {
     setSelectedEmployee(employeeId);
-    fetchVacations(employeeId);
+    await fetchVacations(employeeId);
   };
+
 
   const updateVacationRequest = async () => {
     try {
@@ -82,18 +123,6 @@ const EmployeeScreen = () => {
       await AsyncStorageFunctions.queueVacationUpdate(updateDetails);
     }
   };
-
-  // Synchroniser les mises à jour en attente lors de la reconnexion
-  useEffect(() => {
-    const syncUpdates = async () => {
-      const isConnected = await AsyncStorageFunctions.checkInternetConnectivity();
-      if (isConnected) {
-        await AsyncStorageFunctions.syncPendingVacationUpdates();
-      }
-    };
-
-    syncUpdates();
-  }, []);
 
   return (
     <View style={styles.container}>

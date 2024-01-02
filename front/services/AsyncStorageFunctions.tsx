@@ -78,20 +78,24 @@ const AsyncStorageFunctions = {
     }
   },
 
-  checkInternetConnectivity: async () => {
-    try {
-      const netInfoState = await NetInfo.fetch();
-      if (netInfoState.isConnected === true) {
-        console.log('Connexion Internet disponible');
-        return true;
-      } else {
-        console.log('Pas de connexion Internet');
-        return false;
-      }
-    } catch (error) {
-      console.error('Erreur lors de la récupération de la connexion Internet', error);
-    }
-  }
+ checkInternetConnectivity: async () => {
+   try {
+     const apiUrl = `http://172.21.64.1:8000/api/vacation-type`;
+     const response = await fetch(apiUrl);
+
+     if (response.ok) {
+       console.log('Connexion à l\'API réussie');
+       return true;
+     } else {
+       console.log('Erreur lors de la connexion à l\'API:', response.status);
+       return false;
+     }
+   } catch (error) {
+     console.error('Erreur lors de la récupération de la connexion à l\'API', error);
+     return false;
+   }
+ }
+
 };
 
 export default AsyncStorageFunctions;
